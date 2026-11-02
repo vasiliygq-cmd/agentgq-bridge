@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AgentGQ — настройка манифеста</title><style>body{font:16px/1.5 system-ui,-apple-system,sans-serif;max-width:700px;margin:48px auto;padding:0 20px;color:#19212c}input{width:100%;box-sizing:border-box;padding:12px;font:inherit;border:1px solid #aaa;border-radius:7px}button{margin-top:12px;padding:12px 16px;background:#173d7a;color:#fff;border:0;border-radius:7px;cursor:pointer}p{color:#4c5868}.error{color:#ae241e}</style></head><body>
+<h1>AgentGQ Bridge — XML-манифест</h1>
+<p>Введите адрес опубликованного сайта GitHub Pages, например <code>https://username.github.io/agentgq-bridge</code>. Файл формируется локально в вашем браузере; адрес никуда не отправляется.</p>
+<label for="url">Адрес сайта (HTTPS)</label><input id="url" placeholder="https://username.github.io/agentgq-bridge" autocomplete="off" spellcheck="false">
+<button id="generate" type="button">Скачать manifest.xml</button><p id="status" aria-live="polite"></p>
+<script>
+(function(){
+ const template = `<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="MailApp">
+  <Id>4e16e2b8-47f1-45e8-9334-9277e7346c32</Id>
+  <Version>1.1.0.0</Version>
+  <ProviderName>AgentGQ</ProviderName>
+  <DefaultLocale>ru-RU</DefaultLocale>
+  <DisplayName DefaultValue="AgentGQ Bridge Test"/>
+  <Description DefaultValue="Client-side diagnostic for reading the currently opened Outlook message."/>
+  <IconUrl DefaultValue="__SITE_URL__/icon.png"/>
+  <SupportUrl DefaultValue="__SITE_URL__/"/>
+  <AppDomains><AppDomain>__SITE_ORIGIN__</AppDomain></AppDomains>
+  <Hosts><Host Name="Mailbox"/></Hosts>
+  <Requirements><Sets DefaultMinVersion="1.1"><Set Name="Mailbox" MinVersion="1.1"/></Sets></Requirements>
+  <FormSettings><Form xsi:type="ItemRead"><DesktopSettings><SourceLocation DefaultValue="__SITE_URL__/taskpane.html"/><RequestedHeight>400</RequestedHeight></DesktopSettings></Form></FormSettings>
+  <Permissions>ReadItem</Permissions>
+  <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+</OfficeApp>`;
+ document.getElementById('generate').addEventListener('click',function(){
+   const status=document.getElementById('status');
+   try {
+     const parsed=new URL(document.getElementById('url').value.trim());
+     if(parsed.protocol!=='https:' || parsed.username || parsed.password || parsed.search || parsed.hash || !/^[a-z0-9.-]+$/i.test(parsed.hostname))throw new Error('Укажите корректный HTTPS-адрес опубликованного сайта без параметров.');
+     const base=(parsed.origin+parsed.pathname).replace(/\/+$/,'');
+     const xml=template.replaceAll('__SITE_URL__',base.replaceAll('&','&amp;')).replaceAll('__SITE_ORIGIN__',parsed.origin);
+     const blob=new Blob([xml],{type:'application/xml;charset=utf-8'});
+     const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='manifest.xml';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+     status.className='';status.textContent='Манифест создан. Загрузите его через «Добавить из файла» в Outlook.';
+   }catch(err){status.className='error';status.textContent=err.message||String(err)}
+ });
+})();
+</script></body></html>
